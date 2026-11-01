@@ -19,7 +19,7 @@
 
 ---
 
-Connect an MT5 account once, then place market and pending orders, close and modify positions, and send one trade to many accounts — from an n8n workflow. A trigger starts the workflow when fxapis sends a signed webhook.
+Connect an MT5 account once, then place market and pending orders, close and modify positions, send one trade to many accounts, and read copy-trading and billing — from an n8n workflow. A trigger starts the workflow when fxapis sends a signed webhook.
 
 You run **no MetaTrader terminal, no Windows VPS and no EA**. fxapis runs the MT5 terminals in its cloud (EU, Amsterdam). This package is an n8n community node. It is not an official n8n node, and it has not yet been submitted for n8n verification.
 
@@ -75,13 +75,18 @@ Reuse the same key when n8n retries the item. Derive it from the thing that caus
 
 | Resource | Operations |
 |---|---|
-| Account | List, get, connect, status, figures, quotes, bring online, take offline, disconnect |
-| Order | Market, pending, get, cancel |
+| Account | List, get, connect, status, figures, quotes, bring online, take offline, disconnect, prepare, delete |
+| Order | List, market, pending, get, cancel |
 | Position | List, close, modify |
 | Multi-account order | Create, get, cancel |
 | Instrument | List |
+| Webhook | List, create, get, update, delete, enable, disable, rotate secret, test, deliveries, redeliver, replay |
+| Copy strategy | List, create, get, update, archive |
+| Copy subscription | List, create, get, update, delete, reset, links |
+| Copy trading | Status, executions |
+| Billing | Usage, daily usage, subscription, invoices, coins |
 
-Copy trading, billing, webhook management and the remaining account writes are not in 0.1.0. Add them in `nodes/Fxapis/catalog.ts` rather than a second node.
+New endpoints belong in `nodes/Fxapis/catalog.ts`, not a second node.
 
 ## Trigger
 

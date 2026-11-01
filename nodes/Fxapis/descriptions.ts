@@ -62,7 +62,7 @@ function operationProperties(operations: Operation[]): INodeProperties[] {
 				required: true,
 				displayOptions: { show },
 				default: '{}',
-				description: 'The request body exactly as the API documents it. See the execution-waves reference.',
+				description: operation.jsonDescription ?? 'The request body exactly as the API documents it. See the execution-waves reference.',
 			});
 		}
 	}
@@ -81,6 +81,6 @@ function fieldProperty(field: Field, show: { resource: string[]; operation: stri
 	};
 	if (field.password) property.typeOptions = { password: true };
 	if (field.options) property.options = field.options;
-	if (PATH_FIELDS.has(field.name)) property.required = true;
+	if (PATH_FIELDS.has(field.name) && field.required !== false) property.required = true;
 	return property;
 }

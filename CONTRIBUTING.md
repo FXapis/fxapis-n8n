@@ -15,7 +15,7 @@ npm run build
 
 Use Node 22 or 24. Node 25 cannot compile a native dependency of the n8n CLI
 (`isolated-vm`). `npm install --ignore-scripts` is enough to lint, test and build
-on Node 25. `npm run dev` needs Node 22.
+on Node 25. `npm run dev` needs Node 24: current n8n requires Node 24 or newer.
 
 These are what the `ci` workflow runs.
 

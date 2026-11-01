@@ -71,16 +71,22 @@ export class FxapisTrigger implements INodeType {
 		const header = headerValue(this.getHeaderData()['fxapis-signature']);
 		const rawBody = rawRequestBody(this.getRequestObject());
 		if (!secret || !rawBody) {
-			return { webhookResponse: { statusCode: 400, body: { error: 'missing raw body or signing secret' } } };
+			return rejectWebhook(this, 400, 'missing raw body or signing secret');
 		}
 		try {
 			const event = await verifyWebhook(rawBody, header, secret);
 			return { workflowData: [[{ json: event as IDataObject }]] };
 		} catch (error) {
 			const message = error instanceof WebhookVerificationError ? error.message : 'signature check failed';
-			return { webhookResponse: { statusCode: 401, body: { error: message } } };
+			return rejectWebhook(this, 401, message);
 		}
 	}
+}
+
+function rejectWebhook(caller: IWebhookFunctions, statusCode: number, message: string): IWebhookResponseData {
+	const response = caller.getResponseObject();
+	response.status(statusCode).json({ error: message });
+	return { noWebhookResponse: true };
 }
 
 function headerValue(value: string | string[] | undefined): string | undefined {

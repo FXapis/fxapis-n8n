@@ -13,3 +13,4 @@ while the version is `0.x`, a minor release (`0.2.0`) may change the API and a p
 - Market and pending orders, position close and modify, multi-account order create.
 - Order writes require an idempotency key. A new key is a new order.
 - `ORDER_UNRESOLVED` is reported as not retryable.
+- Order list, account prepare and delete, webhook management, copy trading, and billing reads.

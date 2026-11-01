@@ -3,8 +3,6 @@ import { operationFor } from './catalog';
 import { nodeProperties } from './descriptions';
 import { fxapisRequest } from './transport';
 
-const PATH_NAMES = new Set(['accountId', 'orderId', 'waveId', 'positionId']);
-
 export class Fxapis implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'fxapis',
@@ -56,12 +54,13 @@ export class Fxapis implements INodeType {
 	}
 }
 
-function requestBody(caller: IExecuteFunctions, operation: { jsonBody?: boolean; body?: Array<{ name: string }> }, itemIndex: number): IDataObject | undefined {
+function requestBody(caller: IExecuteFunctions, operation: { jsonBody?: boolean; path: string; body?: Array<{ name: string }> }, itemIndex: number): IDataObject | undefined {
 	if (operation.jsonBody) return caller.getNodeParameter('jsonBody', itemIndex) as IDataObject;
+	const pathNames = new Set([...operation.path.matchAll(/:([A-Za-z]+)/g)].map((match) => match[1]));
 	const fields = readFields(caller, operation.body ?? [], itemIndex);
 	const body: IDataObject = {};
 	for (const [name, value] of Object.entries(fields)) {
-		if (PATH_NAMES.has(name) || value === '' || value === undefined) continue;
+		if (pathNames.has(name) || value === '' || value === undefined) continue;
 		if (name === 'naming' || name === 'marketName') continue;
 		body[name] = value;
 	}
