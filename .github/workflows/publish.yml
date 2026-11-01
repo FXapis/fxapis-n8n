@@ -1,0 +1,38 @@
+# Publishes to npm via Trusted Publishing (OIDC). No NPM_TOKEN is required.
+# The file name is publish.yml because the n8n Creator Portal looks for that name.
+# Provenance is attached by GitHub's OIDC token (id-token: write).
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/n8n-nodes-fxapis
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm install
+      - name: the tag must match package.json
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p 'require("./package.json").version')"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag does not match package.json version $pkg"
+            exit 1
+          fi
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm install -g npm@latest
+      - name: publish with provenance
+        run: npm publish --provenance --access public

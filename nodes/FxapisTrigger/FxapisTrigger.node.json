@@ -1,0 +1,10 @@
+{
+	"node": "n8n-nodes-fxapis",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Miscellaneous"],
+	"resources": {
+		"credentialDocumentation": [{ "url": "https://docs.fxapis.com/authentication" }],
+		"primaryDocumentation": [{ "url": "https://github.com/FXapis/fxapis-n8n#readme" }]
+	}
+}

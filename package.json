@@ -1,0 +1,68 @@
+{
+	"name": "n8n-nodes-fxapis",
+	"version": "0.1.0",
+	"description": "n8n node for fxapis, the hosted MetaTrader 5 REST API. Trade MT5 accounts over HTTPS with no terminal, VPS or EA.",
+	"license": "MIT",
+	"homepage": "https://docs.fxapis.com",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"mt5",
+		"mt5-api",
+		"metatrader",
+		"metatrader5",
+		"trading-api",
+		"forex"
+	],
+	"author": {
+		"name": "El Wizard",
+		"email": "mago@elwizard.net"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/FXapis/fxapis-n8n.git"
+	},
+	"bugs": {
+		"url": "https://github.com/FXapis/fxapis-n8n/issues"
+	},
+	"engines": {
+		"node": ">=18.17"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "node --experimental-strip-types --test tests/*.test.ts",
+		"typecheck": "tsc --noEmit",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/FxapisApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/Fxapis/Fxapis.node.js",
+			"dist/nodes/FxapisTrigger/FxapisTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "0.54.6",
+		"@types/node": "^22.20.5",
+		"eslint": "9.39.4",
+		"n8n-workflow": "^2.16.0",
+		"prettier": "3.8.3",
+		"release-it": "20.2.0",
+		"typescript": "5.9.3"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}

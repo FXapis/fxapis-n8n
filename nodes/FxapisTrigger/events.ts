@@ -1,0 +1,17 @@
+export const SUBSCRIBABLE_EVENTS = [
+	'order.filled',
+	'order.rejected',
+	'order.unresolved',
+	'order.resolved',
+	'order.cancelled',
+	'position.opened',
+	'position.closed',
+	'account.state_changed',
+	'wave.settled',
+	'copy.executed',
+	'copy.skipped',
+	'copy.failed',
+	'copy.subscription_stopped',
+	'copy.drift_corrected',
+	'copy.master_disconnected',
+] as const;
