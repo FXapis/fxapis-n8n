@@ -1,7 +1,7 @@
 {
 	"name": "n8n-nodes-fxapis",
 	"version": "0.1.0",
-	"description": "n8n node for fxapis, the hosted MetaTrader 5 REST API. Trade MT5 accounts over HTTPS with no terminal, VPS or EA.",
+	"description": "n8n node for fxapis, the hosted MetaTrader 5 REST API: place and close MT5 orders, read accounts and history, and trigger workflows on signed trading webhooks. No terminal, VPS or EA.",
 	"license": "MIT",
 	"homepage": "https://docs.fxapis.com",
 	"keywords": [
@@ -11,12 +11,14 @@
 		"mt5-api",
 		"metatrader",
 		"metatrader5",
+		"trading",
 		"trading-api",
 		"forex"
 	],
 	"author": {
-		"name": "El Wizard",
-		"email": "mago@elwizard.net"
+		"name": "fxapis",
+		"email": "support@fxapis.com",
+		"url": "https://fxapis.com"
 	},
 	"repository": {
 		"type": "git",
@@ -26,7 +28,7 @@
 		"url": "https://github.com/FXapis/fxapis-n8n/issues"
 	},
 	"engines": {
-		"node": ">=18.17"
+		"node": ">=20.19"
 	},
 	"scripts": {
 		"build": "n8n-node build",
@@ -34,19 +36,22 @@
 		"dev": "n8n-node dev",
 		"lint": "n8n-node lint",
 		"lint:fix": "n8n-node lint --fix",
-		"test": "node --experimental-strip-types --test tests/*.test.ts",
+		"test": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --import ./tests/register.mjs --test tests/*.test.ts",
 		"typecheck": "tsc --noEmit",
 		"release": "n8n-node release",
 		"prepublishOnly": "n8n-node prerelease"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"!dist/tsconfig.tsbuildinfo",
+		"!dist/package.json"
 	],
 	"n8n": {
 		"n8nNodesApiVersion": 1,
 		"strict": true,
 		"credentials": [
-			"dist/credentials/FxapisApi.credentials.js"
+			"dist/credentials/FxapisApi.credentials.js",
+			"dist/credentials/FxapisMt5LoginApi.credentials.js"
 		],
 		"nodes": [
 			"dist/nodes/Fxapis/Fxapis.node.js",
@@ -54,12 +59,12 @@
 		]
 	},
 	"devDependencies": {
-		"@n8n/node-cli": "0.54.6",
-		"@types/node": "^22.20.5",
-		"eslint": "9.39.4",
+		"@n8n/node-cli": "1.0.1",
+		"@types/node": "^26.6.6",
+		"eslint": "10.13.0",
 		"n8n-workflow": "^2.16.0",
-		"prettier": "3.8.3",
-		"release-it": "20.2.0",
+		"prettier": "3.9.10",
+		"release-it": "21.1.1",
 		"typescript": "5.9.3"
 	},
 	"peerDependencies": {

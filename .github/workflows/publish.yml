@@ -1,7 +1,11 @@
-# Publishes to npm via Trusted Publishing (OIDC). No NPM_TOKEN is required.
-# The file name is publish.yml because the n8n Creator Portal looks for that name.
-# Provenance is attached by GitHub's OIDC token (id-token: write).
-name: release
+# Publishes to npm with Trusted Publishing (OIDC) when a GitHub release is published.
+# No npm token is stored anywhere: npm mints a short-lived one for this run alone,
+# and the package carries a signed provenance statement, which n8n needs to verify a community node.
+# The file is named publish.yml because that is the name n8n's tooling and Creator Portal expect.
+#
+# The job runs in the `npm` environment, which waits for a required reviewer to approve it
+# in GitHub before any step runs. See RELEASING.md.
+name: publish
 
 on:
   release:
@@ -14,14 +18,14 @@ jobs:
       name: npm
       url: https://www.npmjs.com/package/n8n-nodes-fxapis
     permissions:
-      id-token: write
+      id-token: write # the OIDC token Trusted Publishing exchanges for a publish credential
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
-      - run: npm install
+          registry-url: "https://registry.npmjs.org"
       - name: the tag must match package.json
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -30,9 +34,18 @@ jobs:
             echo "::error::tag v$tag does not match package.json version $pkg"
             exit 1
           fi
+      - run: npm ci
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npm install -g npm@latest
+      # Trusted Publishing needs npm 11.5.1 or newer.
+      - name: npm with Trusted Publishing
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+      # prepublishOnly (n8n-node prerelease) only lets a publish through with RELEASE_MODE set.
       - name: publish with provenance
         run: npm publish --provenance --access public
+        env:
+          RELEASE_MODE: "true"

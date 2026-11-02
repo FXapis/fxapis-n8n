@@ -1,11 +1,20 @@
-import type { INodeProperties } from 'n8n-workflow';
-import { OPERATIONS, resources, type Field, type Operation } from './catalog';
+import type { INodeProperties, NodeParameterValueType } from 'n8n-workflow';
+import { collectionFor, OPERATIONS, resources, type Field, type Operation } from './catalog';
+import { SEARCH_METHODS } from './methods';
 
-const PATH_FIELDS = new Set(['accountId', 'orderId', 'waveId', 'positionId', 'naming', 'marketName']);
+type Show = { resource: string[]; operation: string[] };
+
+const COLLECTION_NAMES: Record<string, string> = {
+	additionalFields: 'Additional Fields',
+	updateFields: 'Update Fields',
+	filters: 'Filters',
+	options: 'Options',
+};
 
 export function nodeProperties(): INodeProperties[] {
-	const byResource = new Map<string, typeof OPERATIONS>();
-	for (const operation of OPERATIONS) byResource.set(operation.resource, [...(byResource.get(operation.resource) ?? []), operation]);
+	const byResource = new Map<string, Operation[]>();
+	for (const operation of OPERATIONS)
+		byResource.set(operation.resource, [...(byResource.get(operation.resource) ?? []), operation]);
 	return [resourceProperty(), ...[...byResource.values()].flatMap(operationProperties)];
 }
 
@@ -39,48 +48,132 @@ function operationProperties(operations: Operation[]): INodeProperties[] {
 			default: operations[0]?.operation ?? 'list',
 		},
 	];
-	for (const operation of operations) {
-		const show = { resource: [operation.resource], operation: [operation.operation] };
-		for (const field of operation.body ?? []) properties.push(fieldProperty(field, show));
-		for (const field of operation.query ?? []) properties.push(fieldProperty(field, show));
-		if (operation.idempotent) {
-			properties.push({
-				displayName: 'Idempotency Key',
-				name: 'idempotencyKey',
-				type: 'string',
-				required: true,
-				displayOptions: { show },
-				default: '',
-				description: 'A stable key for this order. Reuse it on retry. A new key is a new order. Do not use a fresh UUID on every run.',
-			});
+	for (const operation of operations) properties.push(...operationFields(operation));
+	return properties;
+}
+
+export function operationFields(operation: Operation): INodeProperties[] {
+	const show: Show = { resource: [operation.resource], operation: [operation.operation] };
+	const properties: INodeProperties[] = [];
+	for (const field of operation.params ?? []) properties.push(fieldProperty(field, show));
+	for (const target of ['body', 'query'] as const) {
+		for (const field of (target === 'body' ? operation.body : operation.query) ?? []) {
+			if (field.required) properties.push(fieldProperty(field, show));
 		}
-		if (operation.jsonBody) {
-			properties.push({
-				displayName: 'Body',
-				name: 'jsonBody',
-				type: 'json',
-				required: true,
+	}
+	if (operation.idempotent) {
+		properties.push({
+			displayName: 'Idempotency Key',
+			name: 'idempotencyKey',
+			type: 'string',
+			required: true,
+			displayOptions: { show },
+			default: '',
+			placeholder: 'e.g. {{ $json.signalId }}',
+			description:
+				'A key derived from what caused this order, such as a signal ID. Reuse it when the run is retried. A new key places a new order.',
+		});
+	}
+	if (operation.list) {
+		properties.push(
+			{
+				displayName: 'Return All',
+				name: 'returnAll',
+				type: 'boolean',
 				displayOptions: { show },
-				default: '{}',
-				description: operation.jsonDescription ?? 'The request body exactly as the API documents it. See the execution-waves reference.',
-			});
-		}
+				default: false,
+				description: 'Whether to return all results or only up to a given limit',
+			},
+			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				displayOptions: { show: { ...show, returnAll: [false] } },
+				typeOptions: { minValue: 1 },
+				default: 50,
+				description: 'Max number of results to return',
+			},
+		);
+	}
+	for (const target of ['body', 'query'] as const) {
+		const optional = ((target === 'body' ? operation.body : operation.query) ?? []).filter(
+			(field) => !field.required,
+		);
+		if (!optional.length) continue;
+		const name = collectionFor(operation, target);
+		properties.push({
+			displayName: COLLECTION_NAMES[name],
+			name,
+			type: 'collection',
+			placeholder:
+				name === 'filters' ? 'Add Filter' : name === 'options' ? 'Add Option' : 'Add Field',
+			displayOptions: { show },
+			default: {},
+			options: optional
+				.map((field) => fieldProperty(field))
+				.sort((left, right) => left.displayName.localeCompare(right.displayName)),
+		});
 	}
 	return properties;
 }
 
-function fieldProperty(field: Field, show: { resource: string[]; operation: string[] }): INodeProperties {
+function fieldProperty(field: Field, show?: Show): INodeProperties {
+	const property: INodeProperties =
+		field.locator && show ? locatorProperty(field) : plainProperty(field);
+	if (show) property.displayOptions = { show };
+	if (field.required && show) property.required = true;
+	return property;
+}
+
+function locatorProperty(field: Field): INodeProperties {
+	return {
+		displayName: field.label,
+		name: field.name,
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
+		description: field.description,
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				typeOptions: { searchListMethod: SEARCH_METHODS[field.locator!], searchable: true },
+			},
+			{
+				displayName: 'By ID',
+				name: 'id',
+				type: 'string',
+				placeholder: 'e.g. 0192f4b0-6c1e-7c39-9a6e-5d1f0e2a7b11',
+			},
+		],
+	};
+}
+
+function plainProperty(field: Field): INodeProperties {
+	const type = field.type === 'list' ? 'string' : field.type;
 	const property: INodeProperties = {
 		displayName: field.label,
 		name: field.name,
-		type: field.password ? 'string' : field.type,
-		required: field.required === true,
-		displayOptions: { show },
-		default: field.default ?? (field.type === 'boolean' ? false : field.type === 'number' ? 0 : ''),
+		type,
+		default: (field.default ?? defaultFor(field)) as NodeParameterValueType,
 		description: field.description,
 	};
-	if (field.password) property.typeOptions = { password: true };
+	if (field.placeholder) property.placeholder = field.placeholder;
 	if (field.options) property.options = field.options;
-	if (PATH_FIELDS.has(field.name) && field.required !== false) property.required = true;
+	if (field.type === 'number') {
+		property.typeOptions = {
+			numberPrecision: 0,
+			...(field.min !== undefined ? { minValue: field.min } : {}),
+			...(field.max !== undefined ? { maxValue: field.max } : {}),
+		};
+	}
 	return property;
+}
+
+function defaultFor(field: Field): NodeParameterValueType {
+	if (field.type === 'boolean') return false;
+	if (field.type === 'number') return 0;
+	if (field.type === 'multiOptions') return [];
+	if (field.type === 'json') return '{}';
+	return '';
 }

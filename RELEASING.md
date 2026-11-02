@@ -1,22 +1,40 @@
 # Releasing
 
-Every release goes out through this repository's [publish workflow](.github/workflows/publish.yml),
-never from a laptop: it builds, tests and publishes to [npm](https://www.npmjs.com/package/n8n-nodes-fxapis)
-with Trusted Publishing, so no publish token exists anywhere to leak. The published package carries a
-signed provenance attestation. n8n requires that provenance for community-node verification.
+Releases go out through this repository's [publish workflow](.github/workflows/publish.yml), not from
+a laptop. It checks, builds and publishes to [npm](https://www.npmjs.com/package/n8n-nodes-fxapis) with
+Trusted Publishing, so no npm token is stored anywhere. Every version it publishes carries a signed
+provenance statement, which n8n requires before it will verify a community node.
 
-The workflow file is named `publish.yml` because that is the name the n8n Creator Portal asks for.
+The workflow file is named `publish.yml` because that is the name n8n's tooling and Creator Portal expect.
 
 ## The routine
 
-1. Bump the version in `package.json` and add a `CHANGELOG.md` section under `## [Unreleased]`.
+1. Bump the version in `package.json` and move the `CHANGELOG.md` entries from `## [Unreleased]` into a
+   section for the new version.
 2. Push to `main` and wait for CI.
 3. `gh release create vX.Y.Z --title vX.Y.Z --notes "…"`. The tag must equal the package version.
-4. The workflow stages the version on npm. A maintainer approves it with their own 2FA before it is installable.
+4. The publish job waits in the `npm` environment. A required reviewer approves it in GitHub
+   (the run's **Review deployments** button). Nothing runs before that approval, and the environment
+   accepts runs from `v*` tags only.
+5. The job checks that the tag matches the version, runs lint, typecheck, tests and the build, and
+   publishes with provenance. The version is installable as soon as that step finishes.
 
-The first publish of a new package name cannot use Trusted Publishing. A maintainer publishes `0.1.0`
-once by hand from a 2FA-enabled npm account, then adds this repository as a trusted publisher for
-`publish.yml`. After that, laptops do not publish.
+## The first version
+
+npm cannot hand a package name that does not exist yet to Trusted Publishing, so `0.1.0` is published
+once by hand by a maintainer, from a 2FA-enabled npm account that owns the name:
+
+```bash
+npm ci && npm run lint && npm test && npm run build
+RELEASE_MODE=true npm publish --access public
+```
+
+`RELEASE_MODE` lets the publish past `prepublishOnly`, which otherwise stops a local `npm publish`.
+A version published this way has no provenance, so it is not the version to submit for verification.
+
+Then, on npmjs.com, open the package's **Settings → Trusted Publisher**, choose **GitHub Actions**, and
+enter organization `FXapis`, repository `fxapis-n8n`, workflow `publish.yml`, environment `npm`.
+After that, every release goes through the routine above.
 
 ## Versioning
 
@@ -26,6 +44,6 @@ once by hand from a 2FA-enabled npm account, then adds this repository as a trus
 
 ## Verification
 
-Submit the published package at [creators.n8n.io/nodes](https://creators.n8n.io/nodes) only after
-`npx @n8n/scan-community-package n8n-nodes-fxapis` passes and the README still matches this repository.
-Reviews can take up to four weeks.
+Submit at [creators.n8n.io/nodes](https://creators.n8n.io/nodes) only a version the workflow published
+(it has provenance), after `npx @n8n/scan-community-package n8n-nodes-fxapis` passes and the README still
+matches this repository. Reviews can take up to four weeks.

@@ -1,10 +1,18 @@
 {
-	"node": "n8n-nodes-fxapis",
+	"node": "n8n-nodes-fxapis.fxapis",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
-	"categories": ["Miscellaneous"],
+	"categories": ["Finance & Accounting"],
 	"resources": {
-		"credentialDocumentation": [{ "url": "https://docs.fxapis.com/authentication" }],
-		"primaryDocumentation": [{ "url": "https://github.com/FXapis/fxapis-n8n#readme" }]
+		"credentialDocumentation": [
+			{
+				"url": "https://docs.fxapis.com/authentication"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/FXapis/fxapis-n8n#readme"
+			}
+		]
 	}
 }

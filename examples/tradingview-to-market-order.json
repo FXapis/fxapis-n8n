@@ -1,0 +1,128 @@
+{
+  "name": "fxapis: TradingView alert to market order",
+  "nodes": [
+    {
+      "id": "c7d3a1e2-0001-4000-8000-000000000001",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -360
+      ],
+      "parameters": {
+        "content": "## TradingView alert \u2192 MT5 market order\n\nPoint the TradingView alert at this workflow's **production** webhook URL, with a message such as:\n\n```json\n{\"secret\":\"CHANGE_ME\",\"alertId\":\"{{timenow}}-{{ticker}}\",\"symbol\":\"{{ticker}}\",\"side\":\"buy\",\"volume\":\"0.01\"}\n```\n\nReplace `CHANGE_ME` in **Check Secret**, and the account ID in **Place Market Order**. The alert ID is the idempotency key, so a repeated alert does not trade twice. Use a broker demo account.",
+        "width": 520,
+        "height": 320
+      }
+    },
+    {
+      "id": "c7d3a1e2-0001-4000-8000-000000000002",
+      "name": "TradingView Alert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "5b0f6f0e-6c4e-4c7a-9b7e-2f1f4f0a9c11",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tradingview-alert",
+        "options": {}
+      }
+    },
+    {
+      "id": "c7d3a1e2-0001-4000-8000-000000000003",
+      "name": "Check Secret",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0b6a2c55-3f1e-4d0b-9d61-1d9a5d7c2e01",
+              "leftValue": "={{ $json.body.secret }}",
+              "rightValue": "CHANGE_ME",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c7d3a1e2-0001-4000-8000-000000000004",
+      "name": "Place Market Order",
+      "type": "n8n-nodes-fxapis.fxapis",
+      "typeVersion": 1,
+      "position": [
+        460,
+        -20
+      ],
+      "parameters": {
+        "resource": "order",
+        "operation": "market",
+        "accountId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FXAPIS_ACCOUNT_ID"
+        },
+        "naming": "symbol",
+        "marketName": "={{ $json.body.symbol }}",
+        "side": "={{ $json.body.side }}",
+        "volume": "={{ $json.body.volume }}",
+        "idempotencyKey": "={{ $json.body.alertId }}",
+        "additionalFields": {
+          "deviationPoints": 20,
+          "comment": "tradingview"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "TradingView Alert": {
+      "main": [
+        [
+          {
+            "node": "Check Secret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Secret": {
+      "main": [
+        [
+          {
+            "node": "Place Market Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

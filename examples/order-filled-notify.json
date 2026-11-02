@@ -1,0 +1,100 @@
+{
+  "name": "fxapis: notify on order filled",
+  "nodes": [
+    {
+      "id": "c7d3a1e2-0002-4000-8000-000000000001",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -340
+      ],
+      "parameters": {
+        "content": "## Notify on every fill\n\n**fxapis Trigger** registers its webhook when you activate the workflow. fxapis delivers only to public HTTPS on port 443.\n\nDeliveries are at least once, so **Skip Repeats** drops an event ID it has already seen in earlier executions.\n\nReplace the URL in **Send Notification** with your chat tool's incoming-webhook URL.",
+        "width": 480,
+        "height": 280
+      }
+    },
+    {
+      "id": "c7d3a1e2-0002-4000-8000-000000000002",
+      "name": "fxapis Trigger",
+      "type": "n8n-nodes-fxapis.fxapisTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "8d2a4c1b-7e3f-4a9d-8b6c-3e5f7a9b1c22",
+      "parameters": {
+        "events": [
+          "order.filled"
+        ]
+      }
+    },
+    {
+      "id": "c7d3a1e2-0002-4000-8000-000000000003",
+      "name": "Skip Repeats",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "dedupeValue": "={{ $json.id }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "c7d3a1e2-0002-4000-8000-000000000004",
+      "name": "Send Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.example.com/REPLACE_ME",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: 'Filled: ' + $json.data.side + ' ' + $json.data.volume + ' ' + $json.data.symbol + ' (order ' + $json.data.id + ')' }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "fxapis Trigger": {
+      "main": [
+        [
+          {
+            "node": "Skip Repeats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Repeats": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
