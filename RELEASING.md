@@ -17,7 +17,10 @@ The workflow file is named `publish.yml` because that is the name n8n's tooling 
    (the run's **Review deployments** button). Nothing runs before that approval, and the environment
    accepts runs from `v*` tags only.
 5. The job checks that the tag matches the version, runs lint, typecheck, tests and the build, and
-   publishes with provenance. The version is installable as soon as that step finishes.
+   stages the version on npm with provenance (`npm stage publish`; the trusted publisher may only stage).
+6. A maintainer approves the staged version with 2FA: npmjs.com → the package → **Staged Packages** →
+   **Approve**, or `npm stage list n8n-nodes-fxapis` then `npm stage approve <stage-id>`. The version is
+   installable once approved.
 
 ## The first version
 
