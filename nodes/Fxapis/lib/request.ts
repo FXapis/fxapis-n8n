@@ -140,7 +140,7 @@ function convert(field: Field, raw: unknown, target: 'body' | 'query'): Value | 
 		case 'multiOptions': {
 			const items = Array.isArray(raw) ? raw.map(String) : [];
 			if (target === 'query') return items.length ? items.join(',') : undefined;
-			return items;
+			return items.length || !field.omitEmpty ? items : undefined;
 		}
 		case 'json':
 			return parseJson(field, raw);

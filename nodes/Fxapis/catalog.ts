@@ -23,6 +23,8 @@ export type Field = {
 	clears?: string;
 	/** On a boolean field: when on, sends this value; when off, nothing. */
 	whenOn?: string;
+	/** On a multiOptions body field: nothing selected sends nothing, not `[]`. */
+	omitEmpty?: boolean;
 };
 
 export type Operation = {
@@ -1004,6 +1006,7 @@ export const OPERATIONS: Operation[] = [
 				name: 'include',
 				label: 'Include',
 				type: 'multiOptions',
+				omitEmpty: true,
 				default: ['skipped'],
 				description:
 					'Which accounts of a settled multi-account order to retry, by result. A cancelled or abandoned one sent nothing, so every account is retried.',

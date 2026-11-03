@@ -378,6 +378,14 @@ test('retrying a multi-account order sends the results to retry and the new timi
 		barrierPolicy: 'wait',
 		expiresAt: '2026-11-02T14:35:00Z',
 	});
+	assert.equal(
+		buildRequest(
+			op('wave', 'retry'),
+			reader({ waveId: 'w1', idempotencyKey: 'k', additionalFields: { include: [] } }),
+		).body?.include,
+		undefined,
+		'an Include added and then cleared sends nothing, which the API reads as the default',
+	);
 	assert.deepEqual(
 		buildRequest(
 			op('wave', 'retry'),
