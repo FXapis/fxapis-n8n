@@ -24,6 +24,12 @@ while the version is `0.x`, a minor release (`0.2.0`) may change the API and a p
   `partiallyFilled`.
 - Errors: `WAVE_NOT_ENDED` says to wait until the multi-account order has ended and send again with
   the same key; `NOTHING_TO_RETRY` and `WAVE_ALREADY_RELEASING` are never marked retryable.
+- **README:** rewritten to be complete and checked against the code: installing from the n8n UI and
+  by hand, compatibility, both credentials and how to get an API key, the scopes each operation
+  needs, every resource and operation, resource locators, pagination and Return All, idempotency
+  keys, multi-account orders, every trigger event with signature verification and duplicate
+  deliveries, errors, retries and rate limits, AI agents, the example workflows, links and the
+  version history. A test now fails if an operation or trigger event is missing from it.
 
 ## [0.1.0]
 
