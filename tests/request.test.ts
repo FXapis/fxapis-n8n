@@ -333,3 +333,60 @@ test('bodiless writes and reads send no body', () => {
 	assert.equal(buildRequest(op('account', 'warm'), reader({ accountId: 'a' })).body, undefined);
 	assert.equal(buildRequest(op('account', 'get'), reader({ accountId: 'a' })).body, undefined);
 });
+
+test('closing a multi-account order sends its key, and accounts only when added', () => {
+	const all = buildRequest(
+		op('wave', 'close'),
+		reader({ waveId: 'w 1', idempotencyKey: 'close:sig-1', additionalFields: {} }),
+	);
+	assert.equal(all.method, 'POST');
+	assert.equal(all.path, '/v1/execution-waves/w%201/close');
+	assert.equal(all.idempotencyKey, 'close:sig-1');
+	assert.deepEqual(all.body, {});
+	assert.deepEqual(
+		buildRequest(
+			op('wave', 'close'),
+			reader({ waveId: 'w', idempotencyKey: 'k', additionalFields: { accountIds: 'a1, a2' } }),
+		).body,
+		{ accountIds: ['a1', 'a2'] },
+	);
+	assert.throws(
+		() => buildRequest(op('wave', 'close'), reader({ waveId: 'w', additionalFields: {} })),
+		/Idempotency Key/,
+	);
+});
+
+test('retrying a multi-account order sends the results to retry and the new timing', () => {
+	const request = buildRequest(
+		op('wave', 'retry'),
+		reader({
+			waveId: 'w1',
+			idempotencyKey: 'retry:sig-1',
+			additionalFields: {
+				include: ['skipped', 'rejected'],
+				accountIds: 'a1',
+				barrierPolicy: 'wait',
+				expiresAt: '2026-11-02T14:35:00Z',
+			},
+		}),
+	);
+	assert.equal(request.path, '/v1/execution-waves/w1/retry');
+	assert.equal(request.idempotencyKey, 'retry:sig-1');
+	assert.deepEqual(request.body, {
+		include: ['skipped', 'rejected'],
+		accountIds: ['a1'],
+		barrierPolicy: 'wait',
+		expiresAt: '2026-11-02T14:35:00Z',
+	});
+	assert.deepEqual(
+		buildRequest(
+			op('wave', 'retry'),
+			reader({ waveId: 'w1', idempotencyKey: 'k', additionalFields: {} }),
+		).body,
+		{},
+	);
+	assert.throws(
+		() => buildRequest(op('wave', 'retry'), reader({ waveId: '', idempotencyKey: 'k' })),
+		/'Multi-Account Order' is empty/,
+	);
+});

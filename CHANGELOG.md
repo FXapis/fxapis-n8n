@@ -6,6 +6,25 @@ while the version is `0.x`, a minor release (`0.2.0`) may change the API and a p
 
 ## [Unreleased]
 
+## [0.1.1]
+
+- **Multi-account order → Close Positions:** closes the position each filled account opened, every
+  account at once, and outputs a result per account (`closed`, `not_found`, `rejected`,
+  `unresolved` or `skipped`). Needs an idempotency key; **Account IDs** closes only some accounts.
+- **Multi-account order → Retry:** places a new multi-account order for the accounts that were
+  `skipped`, or also `rejected` with **Include**, linked to the original by `retryOf` and
+  `retriedBy`. Needs an idempotency key; **Barrier Policy**, **Execute At** and **Expires At** are
+  optional.
+- The new `wave.updated` event, sent when an unresolved account of a settled multi-account order is
+  confirmed with the broker, is offered by the **fxapis Trigger**, **Webhook → Create / Update**, and
+  the event filters of **Event → Get Many** and **Webhook → Get Many Deliveries**.
+- **Multi-account order → Get** describes the per-account results as the API now reports them:
+  `rejected` means only that the broker refused; an account whose order was never sent is
+  `skipped`. Accounts carry `filledVolume` and `partiallyFilled`, and the summary counts
+  `partiallyFilled`.
+- Errors: `WAVE_NOT_ENDED` says to wait until the multi-account order has ended and send again with
+  the same key; `NOTHING_TO_RETRY` and `WAVE_ALREADY_RELEASING` are never marked retryable.
+
 ## [0.1.0]
 
 The first release of the fxapis n8n community node and its webhook trigger.

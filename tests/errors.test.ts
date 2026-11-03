@@ -54,6 +54,31 @@ test('codes follow the API error catalogue', () => {
 	assert.equal(failureFrom(502, 'bad gateway').retryable, true);
 });
 
+test('multi-account order close and retry errors follow the catalogue', () => {
+	const notEnded = failureFrom(409, {
+		error: { code: 'WAVE_NOT_ENDED', message: 'releasing' },
+		requestId: 'req_w',
+	});
+	assert.equal(notEnded.retryable, false);
+	assert.match(failureText(notEnded), /once|ended/);
+	assert.match(failureText(notEnded), /same idempotency key/);
+	assert.match(failureText(notEnded), /req_w/);
+	assert.equal(
+		failureFrom(409, { error: { code: 'NOTHING_TO_RETRY', message: 'x' } }).retryable,
+		false,
+	);
+	assert.equal(
+		failureFrom(409, {
+			error: { code: 'NOTHING_TO_RETRY', message: 'x', details: [{ retryable: true }] },
+		}).retryable,
+		false,
+	);
+	assert.equal(
+		failureFrom(409, { error: { code: 'WAVE_ALREADY_RELEASING', message: 'x' } }).retryable,
+		false,
+	);
+});
+
 test('a rejection is retryable only when the API says so', () => {
 	const rejected = (retryable: boolean) =>
 		failureFrom(422, { error: { code: 'ORDER_REJECTED', message: 'x', details: [{ retryable }] } });

@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-fxapis",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "n8n node for fxapis, the hosted MetaTrader 5 REST API: place and close MT5 orders, read accounts and history, and trigger workflows on signed trading webhooks. No terminal, VPS or EA.",
 	"license": "MIT",
 	"homepage": "https://docs.fxapis.com",

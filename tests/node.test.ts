@@ -270,3 +270,64 @@ test('a network failure is reported as unreachable', async () => {
 		/could not be reached/,
 	);
 });
+
+test('closing a multi-account order sends the key and outputs the per-account results as one item', async () => {
+	const result = {
+		waveId: 'w1',
+		summary: { total: 2, closed: 1, notFound: 0, rejected: 0, unresolved: 0, skipped: 1 },
+		legs: [
+			{ accountId: 'a1', result: 'closed', closeOrderId: 'o9' },
+			{ accountId: 'a2', result: 'skipped', closeOrderId: null },
+		],
+	};
+	const context = fakeContext({
+		params: {
+			resource: 'wave',
+			operation: 'close',
+			waveId: 'w1',
+			idempotencyKey: 'close:sig-1',
+			additionalFields: {},
+		},
+		route: () => ({ body: { data: result } }),
+	});
+	const [items] = await execute.call(context);
+	assert.equal(
+		`${context.calls[0].method} ${path(context.calls[0])}`,
+		'POST /v1/execution-waves/w1/close',
+	);
+	assert.equal(context.calls[0].headers?.['Idempotency-Key'], 'close:sig-1');
+	assert.deepEqual(context.calls[0].body, {});
+	assert.deepEqual(
+		items.map((item) => item.json),
+		[result],
+	);
+});
+
+test('retrying a multi-account order before it has ended comes out as WAVE_NOT_ENDED', async () => {
+	const context = fakeContext({
+		continueOnFail: true,
+		params: {
+			resource: 'wave',
+			operation: 'retry',
+			waveId: 'w1',
+			idempotencyKey: 'retry:sig-1',
+			additionalFields: { include: ['skipped'] },
+		},
+		route: () => ({
+			status: 409,
+			body: { error: { code: 'WAVE_NOT_ENDED', message: 'releasing' }, requestId: 'req_r' },
+		}),
+	});
+	const [items] = await execute.call(context);
+	assert.equal(path(context.calls[0]), '/v1/execution-waves/w1/retry');
+	assert.equal(context.calls[0].headers?.['Idempotency-Key'], 'retry:sig-1');
+	assert.deepEqual(context.calls[0].body, { include: ['skipped'] });
+	assert.deepEqual(items[0].json.error, {
+		code: 'WAVE_NOT_ENDED',
+		message: 'releasing',
+		status: 409,
+		requestId: 'req_r',
+		retryable: false,
+		retryAfter: null,
+	});
+});

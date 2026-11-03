@@ -21,6 +21,8 @@ const NEVER_RETRY = new Set([
 	'ORDER_NOT_FOUND',
 	'POSITION_NOT_FOUND',
 	'WAVE_NOT_FOUND',
+	'WAVE_ALREADY_RELEASING',
+	'NOTHING_TO_RETRY',
 	'IDEMPOTENCY_KEY_REUSED',
 	'TRADING_DISABLED',
 	'FEATURE_NOT_IN_PLAN',
@@ -108,6 +110,10 @@ export function failureParts(failure: FxapisFailure): { message: string; descrip
 		hints.push('Check the API key in the fxapis credential.');
 	else if (failure.code === 'MISSING_SCOPE')
 		hints.push('Use an API key with the scope this operation needs.');
+	else if (failure.code === 'WAVE_NOT_ENDED')
+		hints.push(
+			'Wait until the multi-account order has ended (settled, cancelled or abandoned), then send it again with the same idempotency key.',
+		);
 	else if (failure.code === 'COPY_TRADING_PAUSED') hints.push('Copy trading is coming soon.');
 	if (failure.requestId) hints.push(`requestId ${failure.requestId}`);
 	return { message: `${failure.code}: ${failure.message}`, description: hints.join(' ') };

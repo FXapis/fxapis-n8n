@@ -141,3 +141,16 @@ test('a 404 is recognised when n8n wraps the HTTP error in its own error', async
 	const gone = context({ del: notFound, wrapErrors: true });
 	assert.equal(await hooks.delete.call(gone), true);
 });
+
+test('the trigger offers wave.updated and subscribes to it when chosen', async () => {
+	const events = new FxapisTrigger().description.properties.find((item) => item.name === 'events');
+	const values = (events?.options ?? []).map((option) => ('value' in option ? option.value : ''));
+	assert.ok(values.includes('wave.settled'));
+	assert.ok(values.includes('wave.updated'));
+	const ctx = context({ stored: false, events: ['wave.settled', 'wave.updated'] });
+	assert.equal(await hooks.create.call(ctx), true);
+	assert.deepEqual((ctx.calls[0].body as { events: string[] }).events, [
+		'wave.settled',
+		'wave.updated',
+	]);
+});

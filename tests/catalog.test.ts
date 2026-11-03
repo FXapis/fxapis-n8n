@@ -1,7 +1,8 @@
 /* eslint-disable @n8n/community-nodes/no-restricted-imports */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { OPERATIONS } from '../nodes/Fxapis/catalog.ts';
+import { OPERATIONS, operationFor } from '../nodes/Fxapis/catalog.ts';
+import { SUBSCRIBABLE_EVENTS } from '../nodes/FxapisTrigger/events.ts';
 import { Fxapis } from '../nodes/Fxapis/Fxapis.node.ts';
 
 test('every path parameter is collected as a parameter, and nothing else is', () => {
@@ -71,6 +72,8 @@ test('the catalog covers the documented customer endpoints', () => {
 		'GET /v1/execution-waves',
 		'GET /v1/execution-waves/{}',
 		'POST /v1/execution-waves/{}/cancel',
+		'POST /v1/execution-waves/{}/close',
+		'POST /v1/execution-waves/{}/retry',
 		'GET /v1/copy/status',
 		'GET /v1/copy/strategies',
 		'POST /v1/copy/strategies',
@@ -121,7 +124,9 @@ test('only order writes that open or close exposure ask for an idempotency key',
 		'order.market',
 		'order.pending',
 		'position.close',
+		'wave.close',
 		'wave.create',
+		'wave.retry',
 	]);
 });
 
@@ -174,5 +179,26 @@ test('optional fields live in a collection and are sorted', () => {
 			property.name,
 		);
 		assert.deepEqual(property.default, {});
+	}
+});
+
+test('the webhook events the node manages are the ones the trigger offers, wave.updated included', () => {
+	const events = operationFor('webhook', 'create')?.body?.find((field) => field.name === 'events');
+	const values = (events?.options ?? []).map((option) => option.value);
+	assert.deepEqual(values, [...SUBSCRIBABLE_EVENTS]);
+	assert.ok(values.includes('wave.updated'));
+});
+
+test('multi-account order close and retry are offered, after cancel, on the order picked from a list', () => {
+	const waves = OPERATIONS.filter((item) => item.resource === 'wave').map((item) => item.operation);
+	assert.deepEqual(waves, ['create', 'list', 'get', 'cancel', 'close', 'retry']);
+	for (const name of ['close', 'retry']) {
+		const operation = operationFor('wave', name);
+		assert.equal(operation?.params?.[0]?.locator, 'wave', name);
+		assert.equal(
+			operation?.body?.some((field) => field.required),
+			false,
+			`${name} has only optional body fields`,
+		);
 	}
 });

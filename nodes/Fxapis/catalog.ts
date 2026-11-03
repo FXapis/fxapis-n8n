@@ -57,6 +57,7 @@ const EVENTS = [
 	'position.closed',
 	'account.state_changed',
 	'wave.settled',
+	'wave.updated',
 	'copy.executed',
 	'copy.skipped',
 	'copy.failed',
@@ -294,6 +295,41 @@ const events: Field = {
 	options: eventOptions,
 	default: [],
 	description: 'The events this endpoint receives. None means every event.',
+};
+
+const barrierPolicy: Field = {
+	name: 'barrierPolicy',
+	label: 'Barrier Policy',
+	type: 'options',
+	default: 'release-ready',
+	description: 'What to do when some accounts are not online in time',
+	options: [
+		{
+			name: 'Release Ready',
+			value: 'release-ready',
+			description: 'Trade on the accounts that are online',
+		},
+		{
+			name: 'All or Nothing',
+			value: 'all-or-nothing',
+			description: 'Trade on none unless all are online',
+		},
+		{ name: 'Wait', value: 'wait', description: 'Keep waiting until the expiry' },
+	],
+};
+const waveExecuteAt: Field = {
+	name: 'executeAt',
+	label: 'Execute At',
+	type: 'string',
+	placeholder: 'e.g. 2026-11-01T14:30:00Z',
+	description: 'ISO 8601 time to send the orders',
+};
+const waveExpiresAt: Field = {
+	name: 'expiresAt',
+	label: 'Expires At',
+	type: 'string',
+	placeholder: 'e.g. 2026-11-01T14:35:00Z',
+	description: 'Stop waiting for accounts that are not online after this ISO 8601 time',
 };
 
 const A = { resource: 'account', resourceName: 'Account' };
@@ -888,40 +924,9 @@ export const OPERATIONS: Operation[] = [
 				type: 'string',
 				description: 'Your own reference, echoed back',
 			},
-			{
-				name: 'barrierPolicy',
-				label: 'Barrier Policy',
-				type: 'options',
-				default: 'release-ready',
-				description: 'What to do when some accounts are not online in time',
-				options: [
-					{
-						name: 'Release Ready',
-						value: 'release-ready',
-						description: 'Trade on the accounts that are online',
-					},
-					{
-						name: 'All or Nothing',
-						value: 'all-or-nothing',
-						description: 'Trade on none unless all are online',
-					},
-					{ name: 'Wait', value: 'wait', description: 'Keep waiting until the expiry' },
-				],
-			},
-			{
-				name: 'executeAt',
-				label: 'Execute At',
-				type: 'string',
-				placeholder: 'e.g. 2026-11-01T14:30:00Z',
-				description: 'ISO 8601 time to send the orders',
-			},
-			{
-				name: 'expiresAt',
-				label: 'Expires At',
-				type: 'string',
-				placeholder: 'e.g. 2026-11-01T14:35:00Z',
-				description: 'Stop waiting for accounts that are not online after this ISO 8601 time',
-			},
+			barrierPolicy,
+			waveExecuteAt,
+			waveExpiresAt,
 			{
 				name: 'weights',
 				label: 'Weights',
@@ -946,7 +951,8 @@ export const OPERATIONS: Operation[] = [
 		operation: 'get',
 		operationName: 'Get',
 		action: 'Get a multi-account order',
-		description: 'Retrieve a multi-account order with its per-account results',
+		description:
+			'Retrieve a multi-account order with its per-account results: filled (fully or in part), rejected by the broker, skipped (never sent) or unresolved',
 		method: 'GET',
 		path: '/v1/execution-waves/:waveId',
 		params: [wave],
@@ -960,6 +966,62 @@ export const OPERATIONS: Operation[] = [
 		method: 'POST',
 		path: '/v1/execution-waves/:waveId/cancel',
 		params: [wave],
+	},
+	{
+		...W,
+		operation: 'close',
+		operationName: 'Close Positions',
+		action: 'Close the positions of a multi-account order',
+		description:
+			'Close the position each filled account opened, every account at once, with a result per account. Reuse the idempotency key on retry.',
+		method: 'POST',
+		path: '/v1/execution-waves/:waveId/close',
+		params: [wave],
+		idempotent: true,
+		body: [
+			{
+				name: 'accountIds',
+				label: 'Account IDs',
+				type: 'list',
+				description:
+					'Comma-separated fxapis account IDs of this multi-account order, to close only those. Leave out to close every account.',
+			},
+		],
+	},
+	{
+		...W,
+		operation: 'retry',
+		operationName: 'Retry',
+		action: 'Retry the accounts a multi-account order did not reach',
+		description:
+			'Place a new multi-account order for the accounts that were skipped, linked by retryOf. Reuse the idempotency key on retry.',
+		method: 'POST',
+		path: '/v1/execution-waves/:waveId/retry',
+		params: [wave],
+		idempotent: true,
+		body: [
+			{
+				name: 'include',
+				label: 'Include',
+				type: 'multiOptions',
+				default: ['skipped'],
+				description:
+					'Which accounts of a settled multi-account order to retry, by result. A cancelled or abandoned one sent nothing, so every account is retried.',
+				options: [
+					{ name: 'Skipped', value: 'skipped', description: 'Never reached the broker' },
+					{ name: 'Rejected', value: 'rejected', description: 'The broker refused the order' },
+				],
+			},
+			{
+				name: 'accountIds',
+				label: 'Account IDs',
+				type: 'list',
+				description: 'Comma-separated fxapis account IDs: only these, of those Include selects',
+			},
+			{ ...barrierPolicy, description: "Leave out to use the original order's policy" },
+			waveExecuteAt,
+			waveExpiresAt,
+		],
 	},
 
 	{

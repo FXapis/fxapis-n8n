@@ -8,6 +8,7 @@ export const SUBSCRIBABLE_EVENTS = [
 	'position.closed',
 	'account.state_changed',
 	'wave.settled',
+	'wave.updated',
 	'copy.executed',
 	'copy.skipped',
 	'copy.failed',
