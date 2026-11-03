@@ -6,6 +6,11 @@ while the version is `0.x`, a minor release (`0.2.0`) may change the API and a p
 
 ## [Unreleased]
 
+## [0.1.2]
+
+- Passes n8n's community package scan: the **Operation** parameter's default is now readable by n8n's
+  lint, which the scan runs with inline disables ignored. No change in behaviour.
+
 ## [0.1.1]
 
 - **Multi-account order → Close Positions:** closes the position each filled account opened, every

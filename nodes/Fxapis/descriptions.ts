@@ -31,8 +31,10 @@ function resourceProperty(): INodeProperties {
 
 function operationProperties(operations: Operation[]): INodeProperties[] {
 	const resource = operations[0]?.resource ?? '';
+	// The first operation of this resource. A plain name, so n8n's lint (which the
+	// community package scan runs without inline disables) can read the default.
+	const firstOperation = operations[0]?.operation ?? 'list';
 	const properties: INodeProperties[] = [
-		// eslint-disable-next-line n8n-nodes-base/node-param-default-missing -- default is the first operation of this resource
 		{
 			displayName: 'Operation',
 			name: 'operation',
@@ -45,7 +47,7 @@ function operationProperties(operations: Operation[]): INodeProperties[] {
 				action: item.action,
 				description: item.description,
 			})),
-			default: operations[0]?.operation ?? 'list',
+			default: firstOperation,
 		},
 	];
 	for (const operation of operations) properties.push(...operationFields(operation));

@@ -37,6 +37,8 @@ jobs:
           fi
       - run: npm ci
       - run: npm run lint
+      # n8n's community package scan lints with inline disables ignored.
+      - run: npm run lint:scan
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

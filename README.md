@@ -447,6 +447,7 @@ Import any of these with *Workflows → Import from File*. Each uses placeholder
 
 | Version | Changes |
 |---|---|
+| 0.1.2 | Passes n8n's community package scan; no change in behaviour |
 | 0.1.1 | Multi-account order **Close Positions** and **Retry**, the `wave.updated` event, per-account `filledVolume` and `partiallyFilled`, `rejected` meaning only a broker refusal, guidance for the new error codes, and this complete README |
 | 0.1.0 | First release: the **fxapis** node and the **fxapis Trigger** |
 
