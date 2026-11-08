@@ -60,12 +60,12 @@
 		]
 	},
 	"devDependencies": {
-		"@n8n/node-cli": "1.0.1",
+		"@n8n/node-cli": "1.1.0",
 		"@types/node": "^26.6.6",
-		"eslint": "10.13.0",
+		"eslint": "10.14.0",
 		"n8n-workflow": "^2.16.0",
 		"prettier": "3.9.10",
-		"release-it": "21.1.1",
+		"release-it": "21.1.2",
 		"typescript": "5.9.3"
 	},
 	"peerDependencies": {
